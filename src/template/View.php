@@ -104,7 +104,6 @@ class View {
         return $this->stripvtags('<? if(is_array('.$matches[1].')) foreach('.$matches[1].' as '.$matches[2].' => '.$matches[3].') { ?>');
     }
 
-    // 载入模板
     public function parse_template_callback_getinto($matches) {
         return $this->getfile($this->getTemplate($matches[1]));
     }
