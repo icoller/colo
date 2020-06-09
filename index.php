@@ -1,5 +1,5 @@
 <?php
-require 'src/Colo.php';
+require 'Colo.php';
 
 Colo::route('/', function(){
     echo 'hello world!';

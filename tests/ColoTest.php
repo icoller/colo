@@ -1,6 +1,6 @@
 <?php
 require_once 'vendor/autoload.php';
-require_once __DIR__.'/../colo/Colo.php';
+require_once __DIR__.'/../Colo.php';
 
 class ColoTest extends PHPUnit_Framework_TestCase
 {

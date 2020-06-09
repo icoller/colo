@@ -1,6 +1,6 @@
 <?php
 require_once 'vendor/autoload.php';
-require_once __DIR__.'/../colo/autoload.php';
+require_once __DIR__.'/../autoload.php';
 
 class RouterTest extends PHPUnit_Framework_TestCase
 {
