@@ -47,71 +47,33 @@ class View {
         $this->path = $path;
     }
 
-
     public function parse_template($template) {
-
         if(empty($template)){
             return false;
         }
-
-        //过滤PHP代码
         $var_regexp = "((\\\$[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*(\-\>)?[a-zA-Z0-9_\x7f-\xff]*)(\[[a-zA-Z0-9_\-\.\"\'\[\]\$\x7f-\xff]+\])*)";
         $const_regexp = "([a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*)";
-
         $template = preg_replace("/([\n\r]+)\t+/s", "\\1", $template);
-
-        // 将注释全部替换掉
         $template = preg_replace("/\<\!\-\-\{(.+?)\}\-\-\>/s", "{\\1}", $template);
-
-        // 时间
-        $template = preg_replace_callback("/[\n\r\t]*\{date\((.+?)\)\}[\n\r\t]*/i", array($this, 'parse_template_callback_datetags_1'), $template);
-
-        // 头像
-        $template = preg_replace_callback("/[\n\r\t]*\{avatar\((.+?)\)\}[\n\r\t]*/i", array($this, 'parse_template_callback_avatartags_1'), $template);
-
-        //执行php代码
         $template = preg_replace_callback("/[\n\r\t]*\{eval\}\s*(\<\!\-\-)*(.+?)(\-\-\>)*\s*\{\/eval\}[\n\r\t]*/is", array($this, 'parse_template_callback_evaltags_2'), $template);
         $template = preg_replace_callback("/[\n\r\t]*\{eval\s+(.+?)\s*\}[\n\r\t]*/is", array($this, 'parse_template_callback_evaltags_1'), $template);
-
-        // 输出php
         $template = preg_replace("/\{(\\\$[a-zA-Z0-9_\-\>\[\]\'\"\$\.\x7f-\xff]+)\}/s", "<?=\\1?>", $template);
-        $template = preg_replace_callback("/$var_regexp/s", array($this, 'parse_template_callback_addquote_1'), $template);
-        $template = preg_replace_callback("/\<\?\=\<\?\=$var_regexp\?\>\?\>/s", array($this, 'parse_template_callback_addquote_1'), $template);
-
-        // echo 输出;
         $template = preg_replace_callback("/[\n\r\t]*\{echo\s+(.+?)\}[\n\r\t]*/is", array($this, 'parse_template_callback_stripvtags_echo1'), $template);
-
-        // if else判断
         $template = preg_replace_callback("/([\n\r\t]*)\{if\s+(.+?)\}([\n\r\t]*)/is", array($this, 'parse_template_callback_stripvtags_if123'), $template);
         $template = preg_replace_callback("/([\n\r\t]*)\{elseif\s+(.+?)\}([\n\r\t]*)/is", array($this, 'parse_template_callback_stripvtags_elseif123'), $template);
         $template = preg_replace("/\{else\}/i", "<? } else { ?>", $template);
         $template = preg_replace("/\{\/if\}/i", "<? } ?>", $template);
-
-        // loop 循环
         $template = preg_replace_callback("/[\n\r\t]*\{loop\s+(\S+)\s+(\S+)\}[\n\r\t]*/is", array($this, 'parse_template_callback_stripvtags_loop12'), $template);
         $template = preg_replace_callback("/[\n\r\t]*\{loop\s+(\S+)\s+(\S+)\s+(\S+)\}[\n\r\t]*/is", array($this, 'parse_template_callback_stripvtags_loop123'), $template);
         $template = preg_replace("/\{\/loop\}/i", "<? } ?>", $template);
-
         $template = preg_replace("/\{$const_regexp\}/s", "<?=\\1?>", $template);
-
-        // 替换占位符
         if(!empty($this->replacecode)) {
             $template = str_replace($this->replacecode['search'], $this->replacecode['replace'], $template);
         }
-        
         $template = preg_replace("/ \?\>[\n\r]*\<\? /s", " ", $template);
         $template = preg_replace("/\<\?(\s{1})/is", "<?php\\1", $template);
         $template = preg_replace("/\<\?\=(.+?)\?\>/is", "<?php echo \\1;?>", $template);
-
         return $template;
-    }
-
-    public function parse_template_callback_datetags_1($matches) {
-        return $this->datetags($matches[1]);
-    }
-
-    public function parse_template_callback_avatartags_1($matches) {
-        return $this->avatartags($matches[1]);
     }
 
     public function parse_template_callback_evaltags_2($matches) {
@@ -120,10 +82,6 @@ class View {
 
     public function parse_template_callback_evaltags_1($matches) {
         return $this->evaltags($matches[1]);
-    }
-
-    public function parse_template_callback_addquote_1($matches) {
-        return $this->addquote('<?='.$matches[1].'?>');
     }
 
     public function parse_template_callback_stripvtags_echo1($matches) {
@@ -151,31 +109,11 @@ class View {
         return $this->getfile($this->getTemplate($matches[1]));
     }
 
-    public function datetags($parameter) {
-        $parameter = stripslashes($parameter);
-        $i = count($this->replacecode['search']);
-        $this->replacecode['search'][$i] = $search = "<!--DATE_TAG_$i-->";
-        $this->replacecode['replace'][$i] = "<?php echo dgmdate($parameter);?>";
-        return $search;
-    }
-
-    public function avatartags($parameter) {
-        $parameter = stripslashes($parameter);
-        $i = count($this->replacecode['search']);
-        $this->replacecode['search'][$i] = $search = "<!--AVATAR_TAG_$i-->";
-        $this->replacecode['replace'][$i] = "<?php echo avatar($parameter);?>";
-        return $search;
-    }
-
     public function evaltags($php) {
         $i = count($this->replacecode['search']);
         $this->replacecode['search'][$i] = $search = "<!--EVAL_TAG_$i-->";
         $this->replacecode['replace'][$i] = "<? $php?>";
         return $search;
-    }
-
-    public function addquote($var) {
-        return str_replace("\\\"", "\"", preg_replace("/\[([a-zA-Z0-9_\-\.\x7f-\xff]+)\]/s", "['\\1']", $var));
     }
 
     public function stripvtags($expr, $statement = '') {
