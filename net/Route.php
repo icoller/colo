@@ -73,6 +73,12 @@ class Route {
         $ids = array();
         $last_char = substr($this->pattern, -1);
 
+        // Jump 301 with trailing slash
+        if(substr($url, -1) == '/' && $last_char !== '/'){
+            header('HTTP/1.1 301 Moved Permanently');
+            header('Location: '.rtrim($url,'/'));
+        }
+
         // Get splat
         if ($last_char === '*') {
             $n = 0;
